@@ -1,3 +1,4 @@
+// GitHub 的Jenkinsfile文件
 pipeline {
   agent {
     node {
@@ -19,23 +20,23 @@ pipeline {
         APP_NAME = 'devops-java-sample'
         SONAR_CREDENTIAL_ID = 'sonar-token'
     }
-
-    stages {
+    
+    stages { // 整个流水线的开始
         stage ('checkout scm') {
             steps {
-                checkout(scm)
+                checkout(scm) // 拉取代码
             }
         }
 
         stage ('unit test') {
             steps {
                 container ('maven') {
-                    sh 'mvn clean  -gs `pwd`/configuration/settings.xml test'
+                    sh 'mvn clean  -gs `pwd`/configuration/settings.xml test' // 进行单元测试
                 }
             }
         }
 
-        stage('sonarqube analysis') {
+        stage('sonarqube analysis') { // 代码的静态代码扫描分析
           steps {
             container ('maven') {
               withCredentials([string(credentialsId: "$SONAR_CREDENTIAL_ID", variable: 'SONAR_TOKEN')]) {
@@ -50,7 +51,7 @@ pipeline {
           }
         }
  
-        stage ('build & push') {
+        stage ('build & push') { // 代码的构建和Push镜像
             steps {
                 container ('maven') {
                     sh 'mvn  -Dmaven.test.skip=true -gs `pwd`/configuration/settings.xml clean package'
@@ -78,7 +79,7 @@ pipeline {
           }
         }
 
-        stage('deploy to dev') {
+        stage('deploy to dev') { // 镜像通过 KubeSphere 流水线部署
           when{
             anyOf {
               branch 'master'; branch 'sonarqube'
@@ -100,7 +101,7 @@ pipeline {
             }
           }
         }
-        stage('push with tag'){
+        stage('push with tag'){ // 审批的流程
           when{
             expression{
               return params.TAG_NAME =~ /v.*/
